@@ -98,7 +98,7 @@ Tres capas de procesamiento:
 
 ![Arquitectura GCP](diagrams/diagram_gcp_General.png)
 
-> Ver versión detallada: [`diagrams/diagram_gcp_detailed.png`](diagrams/diagram_gcp_detailed.png)
+> Ver versión detallada: [`diagrams/diagram_gcp_Detailed.png`](diagrams/diagram_gcp_Detailed.png)
 
 Si el volumen creciera a millones de eventos por segundo, cada capa local se reemplaza por un servicio GCP:
 
