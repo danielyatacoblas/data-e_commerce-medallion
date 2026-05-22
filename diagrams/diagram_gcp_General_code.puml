@@ -1,0 +1,115 @@
+@startuml ecommerce_gcp_escalable
+
+!theme plain
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam ArrowColor #555555
+skinparam ArrowThickness 1.5
+skinparam roundCorner 10
+skinparam shadowing false
+
+skinparam actor {
+  BackgroundColor #F1EFE8
+  BorderColor #888780
+  FontColor #2C2C2A
+  FontStyle bold
+}
+skinparam component {
+  BackgroundColor #E6F1FB
+  BorderColor #185FA5
+  FontColor #0C447C
+  FontStyle bold
+}
+skinparam database {
+  BackgroundColor #FAEEDA
+  BorderColor #BA7517
+  FontColor #633806
+  FontStyle bold
+}
+skinparam package {
+  FontStyle bold
+  FontSize 14
+}
+
+' ══════════════════════════════════════════════════════════
+' ACTORES EXTERNOS
+' ══════════════════════════════════════════════════════════
+actor "E-Commerce App"     as APP
+actor "Equipo de Negocio"  as TEAM
+
+' ══════════════════════════════════════════════════════════
+' GCP — CAPA DE INGESTA
+' ══════════════════════════════════════════════════════════
+package "GCP — Ingesta y API" #E8F5E9 {
+
+  component "Cloud Load Balancer\n+ Cloud Armor\n(HTTPS · WAF · rate limiting)" as LB  #FFCDD2
+
+  component "Cloud Run — Ingestion API\nNestJS · TypeScript\nPOST /v1/events · auto-escala 0→N" as CR_IN
+
+  component "Pub/Sub — raw-events topic\nBuffer elástico · retención 7 días\nMillones de eventos por segundo" as PUBSUB  #B2EBF2
+
+  LB      --> CR_IN   : enruta request validado
+  CR_IN   --> PUBSUB  : publica evento raw
+}
+
+' ══════════════════════════════════════════════════════════
+' DATAFLOW — ETL PIPELINE
+' ══════════════════════════════════════════════════════════
+package "Dataflow — ETL Pipeline (Apache Beam · streaming)" #EDE7F6 {
+
+  component "Bronze Writer\nLee Pub/Sub\nEscribe raw sin transformar" as JOB_B  #FFF9C4
+
+  component "Silver Transformer\nISO 8601 · total=price×qty\nvalida amount > 0" as JOB_S  #C8E6C9
+
+  component "Gold Aggregator\nVentanas 1h\nSUM(amount), COUNT(*) por día" as JOB_G  #BBDEFB
+
+  PUBSUB  --> JOB_B  : subscribe (streaming)
+  JOB_B   --> JOB_S  : pasa a transformación
+  JOB_S   --> JOB_G  : agrega en ventanas
+}
+
+' ══════════════════════════════════════════════════════════
+' BIGQUERY — ARQUITECTURA MEDALLÓN
+' ══════════════════════════════════════════════════════════
+package "BigQuery — Arquitectura Medallón" #FFF8E1 {
+
+  database "bronze_raw\n(append-only · partición día\nclustering: transaction_id)" as BQ_B
+
+  database "silver_cleansed\n(is_valid=true · NUMERIC\nISO 8601 timestamp)"        as BQ_S  #C8E6C9
+
+  database "error_events\n(amount ≤ 0\nauditoría y diagnóstico)"                   as BQ_E  #FFCDD2
+
+  database "gold_category_sales\n(Vista materializada\nSUM · COUNT · GROUP BY day)" as BQ_G  #BBDEFB
+
+  JOB_B   --> BQ_B  : escribe raw
+  JOB_S   --> BQ_S  : escribe válidos
+  JOB_S   --> BQ_E  : enruta inválidos
+  JOB_G   --> BQ_G  : actualiza vista cada hora
+}
+
+' ══════════════════════════════════════════════════════════
+' EXPOSICIÓN + SOPORTE
+' ══════════════════════════════════════════════════════════
+package "GCP — Exposición y Observabilidad" #E3F2FD {
+
+  component "Cloud Run — Metrics API\nNestJS · GET /v1/metrics/category-sales\nConsulta Gold · caché 5 min" as CR_OUT
+
+  component "Cloud Storage\nbackup raw events\ntemplates Dataflow"                  as GCS  #F1EFE8
+
+  component "Cloud Monitoring + Logging\nalertas latencia · errores pipeline\ncostos BigQuery"  as MON  #F1EFE8
+
+  BQ_G  ..> CR_OUT  : queries Gold (solo lectura)
+  CR_IN ..> GCS     : backup raw
+  MON   ..> CR_IN   : monitorea
+  MON   ..> JOB_S   : monitorea pipeline
+  MON   ..> BQ_G    : monitorea costos
+}
+
+' ══════════════════════════════════════════════════════════
+' RELACIONES EXTERNAS
+' ══════════════════════════════════════════════════════════
+APP   --> LB      : HTTPS POST /v1/events
+TEAM  --> CR_OUT  : GET /v1/metrics/category-sales
+
+@enduml

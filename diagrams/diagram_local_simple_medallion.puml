@@ -1,0 +1,84 @@
+@startuml ecommerce_local_simple
+
+!theme plain
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam ArrowColor #555555
+skinparam ArrowThickness 1.5
+skinparam roundCorner 12
+skinparam shadowing false
+
+skinparam actor {
+  BackgroundColor #F1EFE8
+  BorderColor #888780
+  FontColor #2C2C2A
+  FontStyle bold
+}
+skinparam component {
+  BackgroundColor #E6F1FB
+  BorderColor #185FA5
+  FontColor #0C447C
+  FontStyle bold
+}
+skinparam database {
+  BackgroundColor #FAEEDA
+  BorderColor #BA7517
+  FontColor #633806
+}
+skinparam package {
+  FontStyle bold
+  FontSize 14
+}
+
+' ── Actores ─────────────────────────────────────
+actor "Cliente / Postman" as CLIENT
+actor "Analista"          as ANALYST
+
+' ══════════════════════════════════════════════
+' BRONZE
+' ══════════════════════════════════════════════
+package "🟤  Bronze — Raw" #FFF3E0 {
+  component "EventsController\nPOST /v1/events" as CTRL
+  database  "BronzeRepository\n(InMemory · append-only)" as REPO
+  CTRL --> REPO : persiste JSON crudo
+}
+
+' ══════════════════════════════════════════════
+' SILVER
+' ══════════════════════════════════════════════
+package "⚪  Silver — Cleansed" #E8F5E9 {
+  component "SilverService\n① ISO 8601  ② total = price×qty  ③ amount>0" as SVC
+  database  "silver_events\n(válidos)"   as SILVER_OK  #C8E6C9
+  database  "error_events\n(amount ≤ 0)" as SILVER_ERR #FFCDD2
+  SVC --> SILVER_OK  : escribe si válido
+  SVC --> SILVER_ERR : enruta si inválido
+}
+
+' ══════════════════════════════════════════════
+' GOLD
+' ══════════════════════════════════════════════
+package "🟡  Gold — Business" #FFFDE7 {
+  component "MetricsController\nGET /v1/metrics/category-sales" as MCTRL
+  database  "gold_category_sales\nSUM(amount), COUNT(*)\nGROUP BY category, day" as GOLD
+  MCTRL --> GOLD : consulta vista
+}
+
+' ══════════════════════════════════════════════
+' PYTHON ANALYTICS
+' ══════════════════════════════════════════════
+package "🐍  /analytics" #EDE7F6 {
+  component "report.py\nPandas · ticket promedio por categoría" as RPT
+  database  "summary_report.csv" as CSV  #D1C4E9
+  RPT --> CSV : genera
+}
+
+' ── Flujo entre capas ───────────────────────
+CLIENT  --> CTRL    : POST /v1/events (JSON)
+REPO    --> SVC     : trigger evento persistido
+SILVER_OK --> GOLD  : fuente de agregación
+MCTRL   ..> RPT    : exporta gold_data.json
+ANALYST --> MCTRL  : GET /v1/metrics
+ANALYST --> RPT    : ejecuta script
+
+@enduml

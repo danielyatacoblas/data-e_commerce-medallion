@@ -1,0 +1,53 @@
+@startuml
+
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam ArrowColor #444444
+skinparam ArrowThickness 1.5
+skinparam roundCorner 10
+skinparam componentBackgroundColor #E6F1FB
+skinparam componentBorderColor #185FA5
+skinparam componentFontColor #0C447C
+skinparam componentFontStyle bold
+skinparam databaseBackgroundColor #FAEEDA
+skinparam databaseBorderColor #BA7517
+skinparam databaseFontStyle bold
+skinparam queueBackgroundColor #E1F5EE
+skinparam queueBorderColor #1D9E75
+skinparam queueFontStyle bold
+skinparam packageBackgroundColor #FFFDE7
+skinparam packageBorderColor #F9A825
+
+left to right direction
+
+actor "E-Commerce App"    as APP
+actor "Equipo de Negocio" as BIZ
+
+[Cloud Run\nIngestion API\nPOST /v1/events] as CR_IN
+queue "Pub/Sub\nraw-events\nbuffer elástico" as PS
+[Dataflow\nETL Pipeline\nApache Beam] as DF
+[Cloud Run\nMetrics API\nGET /v1/metrics] as CR_OUT
+[Cloud Storage\nbackup + templates] as GCS
+[Cloud Monitoring] as MON
+
+package "BigQuery — Medallón" {
+  database "Bronze\nbronze_raw\nappend-only" as BQ_B
+  database "Silver\nsilver_cleansed\nvalidado" as BQ_S
+  database "Gold\ncategory_sales\nagregado" as BQ_G
+}
+
+APP     -->  CR_IN  : HTTPS POST /v1/events
+CR_IN   -->  PS     : publica evento
+CR_IN   ..>  GCS    : backup raw
+PS      -->  DF     : subscribe streaming
+DF      -->  BQ_B   : escribe raw
+DF      -->  BQ_S   : limpia y valida
+DF      -->  BQ_G   : agrega por día
+BIZ     -->  CR_OUT : GET /v1/metrics
+CR_OUT  ..>  BQ_G   : queries Gold
+MON     ..>  DF     : monitorea
+MON     ..>  BQ_G   : monitorea costos
+
+@enduml
