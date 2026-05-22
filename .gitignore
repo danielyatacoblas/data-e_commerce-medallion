@@ -28,6 +28,7 @@ __pycache__/
 *.egg-info/
 .venv/
 venv/
+.pytest_cache/
 analytics/summary_report.csv
 
 # ── OS ──────────────────────────────────────────
@@ -45,3 +46,6 @@ Thumbs.db
 .terraform/
 terraform.tfvars
 service-account-key.json
+
+# -- DOCS / Prueba Data Eng
+Prueba_Data_Eng.docx
