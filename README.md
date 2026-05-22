@@ -275,17 +275,22 @@ Basado en 120 eventos procesados a través del pipeline completo:
 
 > Ver versión detallada: [`diagrams/diagram_gcp_Detailed.png`](diagrams/diagram_gcp_Detailed.png) — Infraestructura como código en [`terraform/main.tf`](./terraform/main.tf)
 
-La clave es desacoplar ingesta, procesamiento y consulta en servicios independientes. Cada componente local tiene su equivalente gestionado en GCP:
+Con millones de eventos por segundo, el cuello de botella es que la ingesta y el procesamiento no pueden correr en el mismo proceso. La solución es desacoplar cada capa Medallón en un servicio GCP gestionado que escala de forma independiente:
 
-| Local | GCP | Por qué escala |
-|-------|-----|----------------|
-| `BronzeController` | **Cloud Run** | Auto-escala de 1 a N instancias sin gestionar servidores |
-| Trigger interno | **Pub/Sub** | Buffer elástico — nunca pierde eventos aunque Dataflow esté saturado |
-| `SilverService` | **Dataflow** (Apache Beam) | Procesa en streaming, auto-escala workers según el lag del topic |
-| `InMemoryRepository` | **BigQuery** | Tablas particionadas por fecha + clustered por categoría — petabytes a bajo costo |
-| Vista Gold | **BigQuery** vista materializada | Se refresca sola cada hora, queries instantáneas sin costo de procesamiento |
-| — | **Cloud Storage** | Backup de eventos raw y templates de Dataflow |
-| — | **Cloud Monitoring** | Alertas de lag, errores 5xx y costos |
+- **Cloud Run** recibe el `POST /v1/events`, valida el JSON y publica en Pub/Sub. Escala horizontalmente de forma automática ante cualquier pico de tráfico.
+- **Pub/Sub** actúa como buffer entre la ingesta y el ETL. Cloud Run responde `201` inmediatamente sin esperar a que se procese nada — ningún evento se pierde aunque Dataflow esté ocupado.
+- **Dataflow** (Apache Beam) consume el topic en streaming, aplica las transformaciones Silver y escribe en BigQuery. Auto-escala sus workers según el lag acumulado.
+- **BigQuery** almacena las tres capas Medallón. Las tablas están particionadas por fecha y agrupadas por categoría, lo que reduce el costo y la latencia de consulta a escala de petabytes. La capa Gold es una vista materializada que se refresca sola cada hora.
+
+| Local | GCP | Rol |
+|-------|-----|-----|
+| `BronzeController` | **Cloud Run** | Ingesta HTTP escalable |
+| Trigger interno | **Pub/Sub** | Buffer elástico sin pérdida de eventos |
+| `SilverService` | **Dataflow** | ETL en streaming con Apache Beam |
+| `InMemoryRepository` | **BigQuery** | Almacén columnar particionado por fecha |
+| Vista Gold | **BigQuery** vista materializada | Métricas pre-agregadas, refresco automático |
+| — | **Cloud Storage** | Backup raw y templates de Dataflow |
+| — | **Cloud Monitoring** | Alertas de lag, errores y costos |
 
 **Flujo en producción:**
 ```
@@ -390,8 +395,13 @@ gitGraph
 
 ## Declaración de uso de IA
 
-Se utilizó **Claude (Anthropic)** como asistente de desarrollo. El contexto que le di y los patrones que documenté durante el proceso están en [`CLAUDE.md`](./CLAUDE.md) y en la carpeta [`skills/`](./skills/).
+Se utilizó **Claude (Anthropic)** como asistente de desarrollo. El contexto que le di y los patrones que documenté están en [`CLAUDE.md`](./CLAUDE.md) y [`skills/`](./skills/).
 
-La IA ayudó principalmente con el scaffolding de módulos NestJS, la estructura de los archivos `.spec.ts` y las funciones de Python analytics. Las decisiones de arquitectura — separación de capas, diseño del pipeline pull-based, idempotencia en Silver — las tomé yo en base al enunciado.
+| Skill | Cómo ayudó la IA |
+|-------|-----------------|
+| [Arquitectura Medallón](./skills/skill_medallion_nestjs.md) | Propuso la estructura de módulos NestJS y la jerarquía de interfaces — yo ajusté las reglas de negocio por capa |
+| [TypeScript strict](./skills/skill_typescript_strict.md) | Generó los DTOs con `class-validator` y el patrón `import type` para interfaces con `isolatedModules` |
+| [TDD con Jest](./skills/skill_tdd_jest.md) | Estructuró los archivos `.spec.ts` con mocks — cada test se ejecutó en RED antes de escribir la implementación |
+| [Python analytics](./skills/skill_python_analytics.md) | Implementó las funciones de Pandas y las 4 gráficas KPI — verificadas corriendo `report.py` con datos reales |
 
-La validación fue simple: cada implementación tenía que pasar sus tests en verde antes de commitear, y el pipeline completo se verificó manualmente con curl (120 eventos POST → GET metrics → CSV + gráficas generadas sin errores). TypeScript strict con `noImplicitAny` actúa como primera línea de defensa contra código ambiguo.
+Las decisiones de arquitectura (pipeline pull-based, idempotencia en Silver, separación de capas) las tomé en base al enunciado. La validación fue: tests en verde antes de cada commit y pipeline completo verificado con curl — 120 eventos POST → GET metrics → CSV + gráficas sin errores.
