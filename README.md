@@ -23,66 +23,53 @@ Recibe eventos de ventas via API REST y los procesa en tres capas (Bronze → Si
 - Python >= 3.10
 - Git
 
-### 1. Clonar el repositorio
+### Paso 1 — Clonar e instalar dependencias
 
 ```bash
 git clone https://github.com/danielyatacoblas/data-e_commerce-medallion.git
 cd data-e_commerce-medallion
-```
-
-### 2. Instalar dependencias Node.js
-
-```bash
 npm install
 ```
 
-### 3. Configurar variables de entorno
+### Paso 2 — Configurar variables de entorno
 
 ```bash
 cp .env.example .env
 ```
 
-El archivo `.env.example` contiene:
-
-```env
-NODE_ENV=development
-PORT=3000
-GCP_PROJECT_ID=tu-proyecto-gcp
-BQ_DATASET_BRONZE=bronze_raw
-BQ_DATASET_SILVER=silver_cleansed
-BQ_DATASET_GOLD=gold_business
-PUBSUB_TOPIC=ecommerce-raw-events
-```
-
 > Para correr localmente solo necesitas `PORT=3000`. Las variables de GCP son para cuando se conecte a la infraestructura real.
 
-### 4. Levantar el servidor
+### Paso 3 — Levantar el servidor (Terminal 1)
+
+Abre una terminal y déjala corriendo:
 
 ```bash
 npm run start:dev
 ```
 
-El servidor corre en `http://localhost:3000`
+Verás este output cuando el servidor esté listo:
 
-### 5. Correr los tests
-
-```bash
-npm run test
+```
+[Nest] LOG [NestFactory] Starting Nest application...
+[Nest] LOG [InstanceLoader] BronzeModule dependencies initialized
+[Nest] LOG [InstanceLoader] SilverModule dependencies initialized
+[Nest] LOG [InstanceLoader] GoldModule dependencies initialized
+[Nest] LOG [RouterExplorer] Mapped {/v1/events, POST} route
+[Nest] LOG [RouterExplorer] Mapped {/v1/metrics/category-sales, GET} route
+[Nest] LOG [NestApplication] Nest application successfully started
 ```
 
----
+El servidor corre en `http://localhost:3000`. **Deja esta terminal abierta.**
 
-## Endpoints del Pipeline Medallón
+### Paso 4 — Ingresar eventos al pipeline (Terminal 2)
 
-### POST `/v1/events` — Capa Bronze
-
-Recibe un evento de venta y lo persiste tal como llega (raw).
+Abre una segunda terminal. Envía eventos con `POST /v1/events` — cada llamada persiste el evento en la capa **Bronze**:
 
 ```bash
 curl -X POST http://localhost:3000/v1/events \
   -H "Content-Type: application/json" \
   -d '{
-    "transaction_id": "tx_987654",
+    "transaction_id": "tx_001",
     "customer_id": "usr_abc123",
     "timestamp": "2026-05-21 15:30:00 UTC",
     "product": {
@@ -94,20 +81,24 @@ curl -X POST http://localhost:3000/v1/events \
   }'
 ```
 
-Respuesta `201`:
+Respuesta `201` por cada evento enviado:
+
 ```json
-{ "status": "received", "transaction_id": "tx_987654", "layer": "bronze" }
+{ "status": "received", "transaction_id": "tx_001", "layer": "bronze" }
 ```
 
-### GET `/v1/metrics/category-sales` — Capa Gold
+Puedes enviar varios eventos con distintas categorías y fechas para ver el pipeline completo.
 
-Dispara el procesamiento Silver (limpieza + validación) y retorna las ventas agregadas por categoría y día.
+### Paso 5 — Consultar métricas Gold (Terminal 2)
+
+Una sola llamada GET dispara todo el pipeline: Bronze → Silver (limpieza) → Gold (agregación):
 
 ```bash
 curl http://localhost:3000/v1/metrics/category-sales
 ```
 
-Respuesta `200`:
+Respuesta `200` con ventas agrupadas por categoría y día:
+
 ```json
 [
   {
@@ -115,8 +106,50 @@ Respuesta `200`:
     "sale_date": "2026-05-21",
     "total_sales": 599.98,
     "transaction_count": 2
+  },
+  {
+    "category": "Clothing",
+    "sale_date": "2026-05-21",
+    "total_sales": 149.97,
+    "transaction_count": 3
   }
 ]
+```
+
+### Paso 6 — Generar reporte analítico Python (Terminal 2)
+
+Con el servidor aún corriendo, en la misma segunda terminal instala las dependencias Python y ejecuta el script analítico:
+
+```bash
+cd analytics/
+pip install -r requirements.txt
+python report.py
+```
+
+Output esperado:
+
+```
+Archivos generados:
+  CSV : .../analytics/summary_report.csv
+  PNG : .../analytics/charts/sales_by_category.png
+  PNG : .../analytics/charts/ticket_promedio_by_category.png
+
+     category  total_sales  transaction_count  ticket_promedio
+     Clothing       239.96                  2           119.98
+  Electronics      1149.96                  3           383.32
+Home & Garden       134.97                  1           134.97
+```
+
+Esto genera en `analytics/`:
+- `summary_report.csv` — tabla de métricas por categoría
+- `charts/sales_by_category.png` — gráfica de ventas totales
+- `charts/ticket_promedio_by_category.png` — gráfica de ticket promedio
+
+### Paso 7 — Correr los tests
+
+```bash
+# Desde la raíz del proyecto
+npm run test
 ```
 
 ---
