@@ -271,15 +271,20 @@ Basado en 120 eventos procesados a través del pipeline completo:
 
 ## Escalabilidad en GCP
 
-![Arquitectura GCP](diagrams/diagram_gcp_General.png)
+La siguiente arquitectura responde la pregunta: **¿cómo escalar este pipeline a millones de eventos por segundo en producción?**
 
+![Arquitectura GCP escalable](diagrams/diagram_gcp_General.png)
+
+> El diagrama muestra el flujo completo: E-Commerce App → Cloud Run (ingesta) → Pub/Sub (buffer) → Dataflow (ETL) → BigQuery Medallón (Bronze / Silver / Gold) → Cloud Run (métricas) → Negocio.
 > Ver versión detallada: [`diagrams/diagram_gcp_Detailed.png`](diagrams/diagram_gcp_Detailed.png)
+>
+> La infraestructura completa está definida como código en [`terraform/main.tf`](./terraform/main.tf) — reproduce todo el stack con `terraform apply`.
 
 ### Estrategia de escalabilidad
 
 El problema central con millones de eventos por segundo es que **la ingesta y el procesamiento no pueden correr al mismo ritmo en el mismo proceso**. Si el API recibe picos de tráfico y el procesamiento Silver tarda, se pierden eventos o el sistema colapsa.
 
-La solución es **desacoplar las tres capas con servicios gestionados**, cada uno escalando de forma independiente:
+La solución es **desacoplar las tres capas con servicios gestionados**, cada uno escalando de forma independiente — exactamente como muestra el diagrama:
 
 **1. Cloud Run — ingesta elástica**
 El `EventsController` se containeriza y despliega en Cloud Run. Escala automáticamente de 0 a miles de instancias según el volumen de requests, sin configurar servidores. Cada instancia solo hace una cosa: validar el JSON y publicar en Pub/Sub. Responde en milisegundos.
