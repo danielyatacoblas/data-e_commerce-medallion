@@ -86,33 +86,34 @@ curl http://localhost:3000/v1/metrics/category-sales
 
 Tres capas de procesamiento:
 
-| Capa | Qué hace |
-|---|---|
-| **Bronze** | Guarda el evento JSON exactamente como llega, sin tocar nada |
+| Capa       | Qué hace                                                                |
+| ---------- | ----------------------------------------------------------------------- |
+| **Bronze** | Guarda el evento JSON exactamente como llega, sin tocar nada            |
 | **Silver** | Limpia la fecha, calcula `total = price × quantity`, rechaza montos ≤ 0 |
-| **Gold** | Agrupa ventas por categoría y día (`SUM`, `COUNT`) para el negocio |
+| **Gold**   | Agrupa ventas por categoría y día (`SUM`, `COUNT`) para el negocio      |
 
 ---
 
 ## Escalabilidad en GCP
 
-![Arquitectura GCP](diagrams/diagram_gcp_general.png)
+![Arquitectura GCP](diagrams/diagram_gcp_General.png)
 
 > Ver versión detallada: [`diagrams/diagram_gcp_detailed.png`](diagrams/diagram_gcp_detailed.png)
 
 Si el volumen creciera a millones de eventos por segundo, cada capa local se reemplaza por un servicio GCP:
 
-| Local | GCP | Por qué |
-|---|---|---|
-| `EventsController` | **Cloud Run** | Containeriza el API, auto-escala sin configurar servidores |
-| Trigger interno | **Pub/Sub** | Buffer elástico entre ingesta y procesamiento, nunca pierde eventos |
-| `SilverService` | **Dataflow** | Procesa millones de registros en paralelo con Apache Beam |
-| `BronzeRepository` | **BigQuery** `bronze_raw` | Almacén columnar para petabytes, append-only |
-| `GoldService` | **BigQuery** vista materializada | Se actualiza sola cada hora, costo mínimo de consulta |
-| — | **Cloud Storage** | Backup de eventos raw y templates de Dataflow |
-| — | **Cloud Monitoring** | Alertas automáticas de latencia, errores y costos |
+| Local              | GCP                              | Por qué                                                             |
+| ------------------ | -------------------------------- | ------------------------------------------------------------------- |
+| `EventsController` | **Cloud Run**                    | Containeriza el API, auto-escala sin configurar servidores          |
+| Trigger interno    | **Pub/Sub**                      | Buffer elástico entre ingesta y procesamiento, nunca pierde eventos |
+| `SilverService`    | **Dataflow**                     | Procesa millones de registros en paralelo con Apache Beam           |
+| `BronzeRepository` | **BigQuery** `bronze_raw`        | Almacén columnar para petabytes, append-only                        |
+| `GoldService`      | **BigQuery** vista materializada | Se actualiza sola cada hora, costo mínimo de consulta               |
+| —                  | **Cloud Storage**                | Backup de eventos raw y templates de Dataflow                       |
+| —                  | **Cloud Monitoring**             | Alertas automáticas de latencia, errores y costos                   |
 
 **Flujo en producción:**
+
 ```
 E-Commerce → Cloud Run → Pub/Sub → Dataflow → BigQuery → Cloud Run (Metrics API) → Negocio
 ```
