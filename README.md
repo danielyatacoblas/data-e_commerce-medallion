@@ -89,6 +89,28 @@ Respuesta `201` por cada evento enviado:
 
 Puedes enviar varios eventos con distintas categorías y fechas para ver el pipeline completo.
 
+**Para generar 120 eventos masivos de golpe**, instala las dependencias Python y ejecuta el generador automático:
+
+```bash
+cd analytics/
+pip install -r requirements.txt
+python generate_events.py
+```
+
+Output esperado:
+
+```
+Enviando 120 eventos al pipeline...
+  20/120 — ultimo: tx_0020 -> received
+  ...
+  120/120 — ultimo: tx_0120 -> received
+
+Obteniendo metricas Gold (Bronze -> Silver -> Gold)...
+  Registros agregados: 85
+
+Guardado: gold_data.json
+```
+
 ### Paso 5 — Consultar métricas Gold (Terminal 2)
 
 Una sola llamada GET dispara todo el pipeline: Bronze → Silver (limpieza) → Gold (agregación):
@@ -118,11 +140,10 @@ Respuesta `200` con ventas agrupadas por categoría y día:
 
 ### Paso 6 — Generar reporte analítico Python (Terminal 2)
 
-Con el servidor aún corriendo, en la misma segunda terminal instala las dependencias Python y ejecuta el script analítico:
+Con el servidor aún corriendo, en la misma segunda terminal ejecuta el script analítico (las dependencias ya se instalaron en el paso anterior):
 
 ```bash
 cd analytics/
-pip install -r requirements.txt
 python report.py
 ```
 
