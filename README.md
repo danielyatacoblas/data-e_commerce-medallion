@@ -275,23 +275,63 @@ Basado en 120 eventos procesados a través del pipeline completo:
 
 > Ver versión detallada: [`diagrams/diagram_gcp_Detailed.png`](diagrams/diagram_gcp_Detailed.png)
 
-Si el volumen creciera a millones de eventos por segundo, cada capa local se reemplaza por un servicio GCP:
+### Estrategia de escalabilidad
 
-| Local | GCP | Por qué |
-|-------|-----|---------|
-| `EventsController` | **Cloud Run** | Containeriza el API, auto-escala sin configurar servidores |
-| Trigger interno | **Pub/Sub** | Buffer elástico entre ingesta y procesamiento, nunca pierde eventos |
-| `SilverService` | **Dataflow** | Procesa millones de registros en paralelo con Apache Beam |
-| `BronzeRepository` | **BigQuery** `bronze_raw` | Almacén columnar para petabytes, append-only |
-| `GoldService` | **BigQuery** vista materializada | Se actualiza sola cada hora, costo mínimo de consulta |
-| — | **Cloud Storage** | Backup de eventos raw y templates de Dataflow |
-| — | **Cloud Monitoring** | Alertas automáticas de latencia, errores y costos |
+El problema central con millones de eventos por segundo es que **la ingesta y el procesamiento no pueden correr al mismo ritmo en el mismo proceso**. Si el API recibe picos de tráfico y el procesamiento Silver tarda, se pierden eventos o el sistema colapsa.
 
-**Flujo en producción:**
+La solución es **desacoplar las tres capas con servicios gestionados**, cada uno escalando de forma independiente:
+
+**1. Cloud Run — ingesta elástica**
+El `EventsController` se containeriza y despliega en Cloud Run. Escala automáticamente de 0 a miles de instancias según el volumen de requests, sin configurar servidores. Cada instancia solo hace una cosa: validar el JSON y publicar en Pub/Sub. Responde en milisegundos.
+
+**2. Pub/Sub — buffer indestructible entre capas**
+Es el punto de desacoplamiento clave. Cloud Run publica el evento raw en un topic de Pub/Sub y responde `201` inmediatamente — sin esperar a que Bronze ni Silver procesen nada. Pub/Sub garantiza entrega al menos una vez, soporta millones de mensajes por segundo y permite replay en caso de fallo del consumidor. Nunca se pierde un evento aunque Dataflow esté saturado momentáneamente.
+
+**3. Dataflow — procesamiento Silver en streaming**
+Un job de Dataflow (Apache Beam) consume el topic de Pub/Sub en streaming continuo. Aplica las transformaciones Silver: timestamp ISO 8601, cálculo de `total_amount`, filtrado de registros inválidos. Dataflow auto-escala sus workers según el lag del topic, procesa en paralelo y escribe directamente en BigQuery. Maneja el backpressure automáticamente.
+
+**4. BigQuery — almacén columnar para las tres capas**
+Cada capa Medallón es una tabla o vista en BigQuery:
+- `bronze_raw` — tabla append-only particionada por fecha de ingesta. Dataflow escribe aquí directamente.
+- `silver_cleansed` — tabla con los registros transformados y validados.
+- `gold_business` — **vista materializada** que agrega `SUM(total_amount)` y `COUNT(*)` por categoría y día. Se actualiza automáticamente cada hora sin costo adicional de procesamiento.
+
+Las tablas particionadas por fecha y agrupadas (`clustered`) por `category` reducen el costo y la latencia de cada consulta en órdenes de magnitud frente a un almacén relacional.
+
+**5. Cloud Run (Metrics API) — exposición Gold bajo demanda**
+El endpoint `GET /v1/metrics/category-sales` consulta la vista materializada de Gold en BigQuery. Al ser una vista pre-agregada, la consulta es instantánea independientemente del volumen histórico acumulado.
+
+### Flujo completo en producción
 
 ```
-E-Commerce → Cloud Run → Pub/Sub → Dataflow → BigQuery → Cloud Run (Metrics API) → Negocio
+E-Commerce
+    │
+    ▼
+Cloud Run (POST /v1/events)   ← escala horizontal automático
+    │  publica evento raw
+    ▼
+Pub/Sub (topic: ecommerce-raw-events)   ← buffer elástico, sin pérdida
+    │  consume en streaming
+    ▼
+Dataflow (Apache Beam)   ← transforma Silver en paralelo, auto-escala workers
+    │  escribe Bronze + Silver
+    ▼
+BigQuery (bronze_raw / silver_cleansed / gold_business)   ← petabytes, particionado
+    │  consulta vista materializada
+    ▼
+Cloud Run (GET /v1/metrics)   ← responde métricas Gold en tiempo real
+    │
+    ▼
+Negocio / Dashboard
 ```
+
+### Componentes de soporte
+
+| Servicio | Rol |
+|----------|-----|
+| **Cloud Storage** | Backup de eventos raw y templates de Dataflow |
+| **Cloud Monitoring** | Alertas de latencia, errores, lag de Pub/Sub y costos |
+| **Terraform** (`terraform/main.tf`) | Infraestructura como código — toda la arquitectura GCP reproducible en un comando |
 
 ---
 
