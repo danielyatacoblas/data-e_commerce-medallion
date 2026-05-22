@@ -391,8 +391,30 @@ gitGraph
 
 ## Declaración de uso de IA
 
-Se utilizó **Claude (Anthropic)** como asistente durante el desarrollo:
+Se utilizó **Claude (Anthropic)** como asistente durante el desarrollo del proyecto.
 
-- **Diagramas** — los scripts Python y archivos PlantUML fueron generados con IA y revisados manualmente para verificar que reflejen la arquitectura real.
-- **Scaffolding** — la estructura base de módulos NestJS fue sugerida por IA y adaptada a los requisitos de la prueba.
-- **Validación** — cada bloque de código fue testeado localmente. El criterio de aceptación fue que los tests Jest pasaran en verde antes de hacer commit.
+### En qué partes ayudó la IA
+
+| Área | Qué generó la IA | Cómo se usó |
+|------|-----------------|-------------|
+| **Arquitectura Medallón** | Estructura de módulos NestJS (Bronze / Silver / Gold), jerarquía de interfaces `SaleEvent → BronzeRecord → SilverRecord` | Revisada y ajustada para que reflejara las reglas de negocio reales del enunciado |
+| **Repository Pattern** | Interfaces `IBronzeRepository` / `ISilverRepository` e implementaciones InMemory | Adaptadas para garantizar idempotencia en Silver y append-only en Bronze |
+| **TDD** | Estructura de los archivos `.spec.ts` con datos hardcodeados y mocks Jest | Cada test fue ejecutado en RED primero (verificando que fallara) antes de escribir la implementación |
+| **Python analytics** | Funciones `load_gold_data`, `calculate_ticket_promedio`, `generate_charts` con matplotlib | Ejecutadas localmente y verificadas con datos reales del pipeline |
+| **Diagramas** | Scripts PlantUML y Python para los diagramas de arquitectura local y GCP | Revisados manualmente para que reflejaran la arquitectura implementada, no solo la teórica |
+| **README** | Estructura de secciones, ejemplos de curl, tablas de comparación GCP | Contrastado contra el enunciado para que cubriera todos los entregables requeridos |
+
+### Cómo se validó que el código fuera correcto y seguro
+
+1. **TDD como criterio de aceptación** — ningún bloque de implementación fue commiteado sin que sus tests pasaran en verde. El orden fue siempre: test RED → commit `test:` → implementación GREEN → commit `feat:`.
+
+2. **Prueba end-to-end manual** — el pipeline completo fue verificado con curl real:
+   - `POST /v1/events` → respuesta `201` con `layer: bronze`
+   - `GET /v1/metrics/category-sales` → datos agregados correctos por categoría y fecha
+   - `python report.py` → CSV + 4 gráficas KPI generadas sin errores
+
+3. **Tipado estricto** — `strict: true` y `noImplicitAny: true` en TypeScript garantizan que no existan tipos implícitos ni `any` sin declarar. El compilador rechaza código ambiguo antes de que llegue a runtime.
+
+4. **Validación de entrada** — `ValidationPipe` global con `class-validator` en todos los DTOs: campos requeridos, tipos, rangos. Datos inválidos son rechazados en el borde de la API antes de entrar al pipeline.
+
+5. **Separación de responsabilidades** — cada capa solo accede a sus propias interfaces. Silver no conoce detalles de Bronze más allá de `IBronzeRepository.findAll()`. Esto limita el impacto de errores a una sola capa.
