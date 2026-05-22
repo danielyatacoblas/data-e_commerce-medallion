@@ -269,74 +269,33 @@ Basado en 120 eventos procesados a través del pipeline completo:
 
 ---
 
-## Escalabilidad en GCP
+## Escalabilidad e implementación en GCP
 
-La siguiente arquitectura responde la pregunta: **¿cómo escalar este pipeline a millones de eventos por segundo en producción?**
+![Arquitectura GCP](diagrams/diagram_gcp_General.png)
 
-![Arquitectura GCP escalable](diagrams/diagram_gcp_General.png)
+> Ver versión detallada: [`diagrams/diagram_gcp_Detailed.png`](diagrams/diagram_gcp_Detailed.png) — Infraestructura como código en [`terraform/main.tf`](./terraform/main.tf)
 
-> El diagrama muestra el flujo completo: E-Commerce App → Cloud Run (ingesta) → Pub/Sub (buffer) → Dataflow (ETL) → BigQuery Medallón (Bronze / Silver / Gold) → Cloud Run (métricas) → Negocio.
-> Ver versión detallada: [`diagrams/diagram_gcp_Detailed.png`](diagrams/diagram_gcp_Detailed.png)
->
-> La infraestructura completa está definida como código en [`terraform/main.tf`](./terraform/main.tf) — reproduce todo el stack con `terraform apply`.
+Con millones de eventos por segundo, el cuello de botella es que la ingesta y el procesamiento no pueden correr en el mismo proceso. La solución es desacoplar cada capa Medallón en un servicio GCP gestionado que escala de forma independiente:
 
-### Estrategia de escalabilidad
+- **Cloud Run** recibe el `POST /v1/events`, valida el JSON y publica en Pub/Sub. Escala horizontalmente de forma automática ante cualquier pico de tráfico.
+- **Pub/Sub** actúa como buffer entre la ingesta y el ETL. Cloud Run responde `201` inmediatamente sin esperar a que se procese nada — ningún evento se pierde aunque Dataflow esté ocupado.
+- **Dataflow** (Apache Beam) consume el topic en streaming, aplica las transformaciones Silver y escribe en BigQuery. Auto-escala sus workers según el lag acumulado.
+- **BigQuery** almacena las tres capas Medallón. Las tablas están particionadas por fecha y agrupadas por categoría, lo que reduce el costo y la latencia de consulta a escala de petabytes. La capa Gold es una vista materializada que se refresca sola cada hora.
 
-El problema central con millones de eventos por segundo es que **la ingesta y el procesamiento no pueden correr al mismo ritmo en el mismo proceso**. Si el API recibe picos de tráfico y el procesamiento Silver tarda, se pierden eventos o el sistema colapsa.
+| Local | GCP | Rol |
+|-------|-----|-----|
+| `BronzeController` | **Cloud Run** | Ingesta HTTP escalable |
+| Trigger interno | **Pub/Sub** | Buffer elástico sin pérdida de eventos |
+| `SilverService` | **Dataflow** | ETL en streaming con Apache Beam |
+| `InMemoryRepository` | **BigQuery** | Almacén columnar particionado por fecha |
+| Vista Gold | **BigQuery** vista materializada | Métricas pre-agregadas, refresco automático |
+| — | **Cloud Storage** | Backup raw y templates de Dataflow |
+| — | **Cloud Monitoring** | Alertas de lag, errores y costos |
 
-La solución es **desacoplar las tres capas con servicios gestionados**, cada uno escalando de forma independiente — exactamente como muestra el diagrama:
-
-**1. Cloud Run — ingesta elástica**
-El `EventsController` se containeriza y despliega en Cloud Run. Escala automáticamente de 0 a miles de instancias según el volumen de requests, sin configurar servidores. Cada instancia solo hace una cosa: validar el JSON y publicar en Pub/Sub. Responde en milisegundos.
-
-**2. Pub/Sub — buffer indestructible entre capas**
-Es el punto de desacoplamiento clave. Cloud Run publica el evento raw en un topic de Pub/Sub y responde `201` inmediatamente — sin esperar a que Bronze ni Silver procesen nada. Pub/Sub garantiza entrega al menos una vez, soporta millones de mensajes por segundo y permite replay en caso de fallo del consumidor. Nunca se pierde un evento aunque Dataflow esté saturado momentáneamente.
-
-**3. Dataflow — procesamiento Silver en streaming**
-Un job de Dataflow (Apache Beam) consume el topic de Pub/Sub en streaming continuo. Aplica las transformaciones Silver: timestamp ISO 8601, cálculo de `total_amount`, filtrado de registros inválidos. Dataflow auto-escala sus workers según el lag del topic, procesa en paralelo y escribe directamente en BigQuery. Maneja el backpressure automáticamente.
-
-**4. BigQuery — almacén columnar para las tres capas**
-Cada capa Medallón es una tabla o vista en BigQuery:
-- `bronze_raw` — tabla append-only particionada por fecha de ingesta. Dataflow escribe aquí directamente.
-- `silver_cleansed` — tabla con los registros transformados y validados.
-- `gold_business` — **vista materializada** que agrega `SUM(total_amount)` y `COUNT(*)` por categoría y día. Se actualiza automáticamente cada hora sin costo adicional de procesamiento.
-
-Las tablas particionadas por fecha y agrupadas (`clustered`) por `category` reducen el costo y la latencia de cada consulta en órdenes de magnitud frente a un almacén relacional.
-
-**5. Cloud Run (Metrics API) — exposición Gold bajo demanda**
-El endpoint `GET /v1/metrics/category-sales` consulta la vista materializada de Gold en BigQuery. Al ser una vista pre-agregada, la consulta es instantánea independientemente del volumen histórico acumulado.
-
-### Flujo completo en producción
-
+**Flujo en producción:**
 ```
-E-Commerce
-    │
-    ▼
-Cloud Run (POST /v1/events)   ← escala horizontal automático
-    │  publica evento raw
-    ▼
-Pub/Sub (topic: ecommerce-raw-events)   ← buffer elástico, sin pérdida
-    │  consume en streaming
-    ▼
-Dataflow (Apache Beam)   ← transforma Silver en paralelo, auto-escala workers
-    │  escribe Bronze + Silver
-    ▼
-BigQuery (bronze_raw / silver_cleansed / gold_business)   ← petabytes, particionado
-    │  consulta vista materializada
-    ▼
-Cloud Run (GET /v1/metrics)   ← responde métricas Gold en tiempo real
-    │
-    ▼
-Negocio / Dashboard
+E-Commerce → Cloud Run → Pub/Sub → Dataflow → BigQuery → Cloud Run (Metrics) → Negocio
 ```
-
-### Componentes de soporte
-
-| Servicio | Rol |
-|----------|-----|
-| **Cloud Storage** | Backup de eventos raw y templates de Dataflow |
-| **Cloud Monitoring** | Alertas de latencia, errores, lag de Pub/Sub y costos |
-| **Terraform** (`terraform/main.tf`) | Infraestructura como código — toda la arquitectura GCP reproducible en un comando |
 
 ---
 
@@ -436,39 +395,13 @@ gitGraph
 
 ## Declaración de uso de IA
 
-Se utilizó **Claude (Anthropic)** como asistente durante el desarrollo del proyecto.
+Se utilizó **Claude (Anthropic)** como asistente de desarrollo. El contexto que le di y los patrones que documenté están en [`CLAUDE.md`](./CLAUDE.md) y [`skills/`](./skills/).
 
-El proceso de colaboración con la IA quedó documentado en dos archivos del repositorio:
+| Skill | Cómo ayudó la IA |
+|-------|-----------------|
+| [Arquitectura Medallón](./skills/skill_medallion_nestjs.md) | Propuso la estructura de módulos NestJS y la jerarquía de interfaces — yo ajusté las reglas de negocio por capa |
+| [TypeScript strict](./skills/skill_typescript_strict.md) | Generó los DTOs con `class-validator` y el patrón `import type` para interfaces con `isolatedModules` |
+| [TDD con Jest](./skills/skill_tdd_jest.md) | Estructuró los archivos `.spec.ts` con mocks — cada test se ejecutó en RED antes de escribir la implementación |
+| [Python analytics](./skills/skill_python_analytics.md) | Implementó las funciones de Pandas y las 4 gráficas KPI — verificadas corriendo `report.py` con datos reales |
 
-- **[`CLAUDE.md`](./CLAUDE.md)** — instrucciones y contexto que se le dio a la IA al inicio de cada sesión: reglas de negocio por capa, estructura de carpetas, orden TDD, GitFlow y criterios de evaluación. Define el marco con el que la IA operó.
-- **[`skills/`](./skills/)** — documentación de los patrones arquitectónicos que emergieron durante el desarrollo conjunto, organizados por área técnica:
-  - [`skill_medallion_nestjs.md`](./skills/skill_medallion_nestjs.md) — Arquitectura Medallón, pipeline pull-based, jerarquía de tipos
-  - [`skill_typescript_strict.md`](./skills/skill_typescript_strict.md) — TypeScript strict, DTOs, Repository Pattern
-  - [`skill_tdd_jest.md`](./skills/skill_tdd_jest.md) — TDD con Jest, orden RED→GREEN, mocks con DI
-  - [`skill_python_analytics.md`](./skills/skill_python_analytics.md) — Pandas, 4 gráficas KPI, matplotlib headless
-
-### En qué partes ayudó la IA
-
-| Área | Qué generó la IA | Cómo se validó |
-|------|-----------------|----------------|
-| **Arquitectura Medallón** | Estructura de módulos NestJS (Bronze / Silver / Gold), jerarquía de interfaces `SaleEvent → BronzeRecord → SilverRecord` | Revisada contra las reglas de negocio del enunciado; ajustada idempotencia en Silver y append-only en Bronze |
-| **Repository Pattern** | Interfaces `IBronzeRepository` / `ISilverRepository` e implementaciones InMemory | Tests unitarios ejecutados en RED antes de cada implementación |
-| **TDD** | Estructura de archivos `.spec.ts` con datos hardcodeados y mocks Jest | Cada test corrió en RED primero — si pasaba antes de la implementación, el test era inválido |
-| **Python analytics** | Funciones `load_gold_data`, `calculate_ticket_promedio`, `generate_charts` con matplotlib | Ejecutadas con 120 eventos reales del pipeline; CSV y 4 PNGs verificados manualmente |
-| **Diagramas** | Scripts PlantUML y Python para diagramas de arquitectura local y GCP | Revisados para que reflejaran la arquitectura implementada, no solo la teórica |
-| **README y documentación** | Estructura de secciones, ejemplos de curl, tablas GCP | Contrastado línea por línea contra los entregables requeridos en el enunciado |
-
-### Cómo se validó que el código fuera correcto y seguro
-
-1. **TDD como criterio de aceptación** — ningún bloque de implementación fue commiteado sin que sus tests pasaran en verde. Orden siempre: test RED → commit `test:` → implementación GREEN → commit `feat:`.
-
-2. **Prueba end-to-end manual** — pipeline completo verificado con datos reales:
-   - `POST /v1/events` × 120 eventos → respuesta `201 { layer: "bronze" }` en cada uno
-   - `GET /v1/metrics/category-sales` → agregación correcta por categoría y fecha
-   - `python report.py` → CSV + 4 gráficas KPI generadas sin errores
-
-3. **Tipado estricto** — `strict: true` y `noImplicitAny: true` en TypeScript. El compilador rechaza tipos implícitos y `any` sin declarar antes de llegar a runtime.
-
-4. **Validación de entrada** — `ValidationPipe` global con `class-validator` en todos los DTOs. Datos inválidos son rechazados en el borde de la API antes de entrar al pipeline.
-
-5. **Separación de responsabilidades** — cada capa solo accede a sus propias interfaces. Silver no conoce detalles de Bronze más allá de `IBronzeRepository.findAll()`. Errores quedan contenidos en una sola capa.
+Las decisiones de arquitectura (pipeline pull-based, idempotencia en Silver, separación de capas) las tomé en base al enunciado. La validación fue: tests en verde antes de cada commit y pipeline completo verificado con curl — 120 eventos POST → GET metrics → CSV + gráficas sin errores.
