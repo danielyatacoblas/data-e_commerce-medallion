@@ -3,13 +3,22 @@ import { BRONZE_REPOSITORY } from '../bronze/repositories/bronze.repository.inte
 import { SILVER_REPOSITORY } from './repositories/silver.repository.interface';
 import type { IBronzeRepository } from '../bronze/repositories/bronze.repository.interface';
 import type { ISilverRepository } from './repositories/silver.repository.interface';
-import { BronzeRecord, SilverRecord } from '../common/interfaces/event.interface';
+import { SilverRecord } from '../common/interfaces/event.interface';
 
 export interface ProcessResult {
   processed: number;
   errors: number;
 }
 
+/**
+ * Responsabilidad única: transformar y validar los registros Bronze → Silver.
+ * Este servicio no expone un endpoint propio; es invocado por GoldService
+ * (o por un job batch) para preparar los datos antes de la agregación.
+ *
+ * Nota de diseño: process() hace un reprocess completo de todos los registros Bronze.
+ * En producción con BigQuery esto sería una consulta incremental (WHERE processed = false),
+ * pero para el MVP local la simplicidad prima sobre la optimización.
+ */
 @Injectable()
 export class SilverService {
   constructor(
@@ -32,13 +41,11 @@ export class SilverService {
       }
 
       const silverRecord: SilverRecord = {
-        transaction_id: record.transaction_id,
-        customer_id: record.customer_id,
+        ...record,
         timestamp: this.toISO8601(record.timestamp),
         product: { ...record.product },
-        quantity: record.quantity,
+        // toFixed(2) previene errores de punto flotante (ej: 0.1 + 0.2 = 0.30000000000000004)
         total_amount: Number(totalAmount.toFixed(2)),
-        ingested_at: record.ingested_at,
       };
 
       await this.silverRepository.save(silverRecord);
@@ -49,7 +56,7 @@ export class SilverService {
   }
 
   private toISO8601(timestamp: string): string {
-    // "2026-05-21 15:30:00 UTC" → "2026-05-21T15:30:00.000Z"
+    // Estandariza "2026-05-21 15:30:00 UTC" al formato "2026-05-21T15:30:00.000Z"
     return new Date(timestamp).toISOString();
   }
 }

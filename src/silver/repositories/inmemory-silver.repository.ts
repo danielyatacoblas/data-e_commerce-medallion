@@ -5,6 +5,12 @@ import {
   SilverRecord,
 } from '../../common/interfaces/event.interface';
 
+/**
+ * Implementación local de SilverRepository usando arrays en memoria.
+ * Mantiene dos colecciones separadas que en GCP serían tablas BigQuery distintas:
+ *   - records → silver_cleansed (solo registros válidos)
+ *   - errors  → silver_error_events (registros rechazados por validación)
+ */
 export class InMemorySilverRepository implements ISilverRepository {
   private readonly records: SilverRecord[] = [];
   private readonly errors: ErrorRecord[] = [];

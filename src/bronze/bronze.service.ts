@@ -9,6 +9,10 @@ export interface IngestResponse {
   layer: string;
 }
 
+/**
+ * Responsabilidad única: recibir el evento y persistirlo en Bronze sin transformarlo.
+ * No contiene lógica de negocio — eso pertenece a Silver.
+ */
 @Injectable()
 export class BronzeService {
   constructor(
