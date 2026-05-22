@@ -142,8 +142,10 @@ Home & Garden       134.97                  1           134.97
 
 Esto genera en `analytics/`:
 - `summary_report.csv` — tabla de métricas por categoría
-- `charts/sales_by_category.png` — gráfica de ventas totales
-- `charts/ticket_promedio_by_category.png` — gráfica de ticket promedio
+- `charts/sales_by_category.png` — donut de distribución de ventas
+- `charts/ticket_promedio_by_category.png` — lollipop de ticket promedio
+- `charts/sales_trend.png` — tendencia diaria de ventas (línea + área)
+- `charts/daily_transactions.png` — transacciones diarias (área apilada)
 
 ### Paso 7 — Correr los tests
 
@@ -200,7 +202,30 @@ cd analytics/
 pip install -r requirements.txt
 ```
 
-### Ejecución
+### Generar datos masivos (opcional)
+
+Si quieres alimentar el pipeline con 120 eventos reales antes de correr el reporte:
+
+```bash
+# Con el servidor corriendo en Terminal 1:
+python generate_events.py
+```
+
+Output esperado:
+
+```
+Enviando 120 eventos al pipeline...
+  20/120 — ultimo: tx_0020 -> received
+  ...
+  120/120 — ultimo: tx_0120 -> received
+
+Obteniendo metricas Gold (Bronze -> Silver -> Gold)...
+  Registros agregados: 85
+
+Guardado: gold_data.json
+```
+
+### Ejecución del reporte
 
 ```bash
 python report.py
@@ -210,25 +235,37 @@ El script:
 1. Lee `gold_data.json` (datos exportados del endpoint Gold)
 2. Calcula `ticket_promedio = total_sales / transaction_count` por categoría con Pandas
 3. Guarda `summary_report.csv`
-4. Genera gráficas KPI en `charts/`
+4. Genera 4 gráficas KPI en `charts/`
 
 ### Resultado CSV
 
+Basado en 120 eventos procesados a través del pipeline completo:
+
 | category | total_sales | transaction_count | ticket_promedio |
 |----------|------------|-------------------|-----------------|
-| Clothing | 239.96 | 2 | 119.98 |
-| Electronics | 1149.96 | 3 | 383.32 |
-| Home & Garden | 134.97 | 1 | 134.97 |
+| Books | 2,979.58 | 31 | 96.12 |
+| Clothing | 3,108.59 | 17 | 182.86 |
+| Electronics | 17,624.99 | 25 | 705.00 |
+| Home & Garden | 7,516.00 | 19 | 395.58 |
+| Sports | 6,401.73 | 28 | 228.63 |
 
 ### Dashboard KPI
 
-**Total de ventas por categoría**
+**Distribución de ventas por categoría (Donut)**
 
-![Total de ventas por categoría](analytics/charts/sales_by_category.png)
+![Distribución de ventas](analytics/charts/sales_by_category.png)
 
-**Ticket promedio por categoría**
+**Ticket promedio por categoría (Lollipop)**
 
-![Ticket promedio por categoría](analytics/charts/ticket_promedio_by_category.png)
+![Ticket promedio](analytics/charts/ticket_promedio_by_category.png)
+
+**Tendencia de ventas diarias (Línea + área)**
+
+![Tendencia de ventas](analytics/charts/sales_trend.png)
+
+**Transacciones diarias por categoría (Área apilada)**
+
+![Transacciones diarias](analytics/charts/daily_transactions.png)
 
 ---
 
