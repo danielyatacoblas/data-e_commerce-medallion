@@ -32,3 +32,9 @@ export interface GoldRecord {
   total_sales: number;
   transaction_count: number;
 }
+
+export interface ErrorRecord {
+  original: BronzeRecord;
+  reason: string;
+  failed_at: Date;
+}
