@@ -82,4 +82,20 @@ describe('InMemorySilverRepository', () => {
       expect(await repository.findErrors()).toHaveLength(2);
     });
   });
+
+  describe('idempotency', () => {
+    it('should not duplicate a record if the same transaction_id is saved twice', async () => {
+      await repository.save(mockSilverRecord);
+      await repository.save(mockSilverRecord);
+
+      expect(await repository.findAll()).toHaveLength(1);
+    });
+
+    it('should save two records with different transaction_ids', async () => {
+      await repository.save(mockSilverRecord);
+      await repository.save({ ...mockSilverRecord, transaction_id: 'tx_002' });
+
+      expect(await repository.findAll()).toHaveLength(2);
+    });
+  });
 });
