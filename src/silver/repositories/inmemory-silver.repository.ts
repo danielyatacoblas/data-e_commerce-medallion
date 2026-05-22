@@ -16,6 +16,10 @@ export class InMemorySilverRepository implements ISilverRepository {
   private readonly errors: ErrorRecord[] = [];
 
   async save(record: SilverRecord): Promise<SilverRecord> {
+    // Idempotente: evita duplicados cuando process() se llama múltiples veces
+    if (this.records.some((r) => r.transaction_id === record.transaction_id)) {
+      return record;
+    }
     const stored = { ...record, product: { ...record.product } };
     this.records.push(stored);
     return stored;
