@@ -1,0 +1,47 @@
+# ── Node / NestJS ──────────────────────────────
+node_modules/
+dist/
+build/
+.npm
+
+# ── Variables de entorno ────────────────────────
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# ── Logs ────────────────────────────────────────
+logs/
+*.log
+npm-debug.log*
+
+# ── TypeScript ──────────────────────────────────
+*.tsbuildinfo
+
+# ── Jest / cobertura ────────────────────────────
+coverage/
+.nyc_output/
+
+# ── Python ──────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+analytics/summary_report.csv
+
+# ── OS ──────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ── IDEs ────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+
+# ── GCP / Terraform ─────────────────────────────
+*.tfstate
+*.tfstate.backup
+.terraform/
+terraform.tfvars
+service-account-key.json
