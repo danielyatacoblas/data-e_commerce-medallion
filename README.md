@@ -252,15 +252,70 @@ ecommerce-pipeline/
 
 ## GitFlow
 
-```
-main     → código estable, tag v1.0.0
-develop  → integración continua
+```mermaid
+gitGraph
+   commit id: "init: repo setup"
 
-feature/ingestion         → Bronze + POST /v1/events
-feature/silver-layer      → Silver + validación
-feature/api-gold          → Gold + GET /v1/metrics/category-sales
-feature/analytics-python  → report.py + Pandas + Matplotlib
+   branch develop
+   checkout develop
+   commit id: "docs: diagrams + README"
+
+   branch feature/project-setup
+   checkout feature/project-setup
+   commit id: "chore: NestJS + tsconfig strict"
+   checkout develop
+   merge feature/project-setup id: "merge: project-setup"
+
+   branch feature/ingestion
+   checkout feature/ingestion
+   commit id: "test(bronze): repository"
+   commit id: "feat(bronze): repository"
+   commit id: "test(bronze): service"
+   commit id: "feat(bronze): service"
+   commit id: "test(bronze): controller"
+   commit id: "feat(bronze): controller + module"
+   checkout develop
+   merge feature/ingestion id: "merge: ingestion → Bronze ✓"
+
+   branch feature/silver-layer
+   checkout feature/silver-layer
+   commit id: "test(silver): repository"
+   commit id: "feat(silver): repository"
+   commit id: "test(silver): service"
+   commit id: "feat(silver): service + module"
+   checkout develop
+   merge feature/silver-layer id: "merge: silver-layer → Silver ✓"
+
+   branch feature/api-gold
+   checkout feature/api-gold
+   commit id: "test(gold): service"
+   commit id: "feat(gold): service"
+   commit id: "test(gold): controller"
+   commit id: "feat(gold): controller + module"
+   checkout develop
+   merge feature/api-gold id: "merge: api-gold → Gold ✓"
+
+   branch feature/analytics-python
+   checkout feature/analytics-python
+   commit id: "test(analytics): report.py"
+   commit id: "feat(analytics): Pandas + CSV"
+   commit id: "feat(analytics): matplotlib charts"
+   checkout develop
+   merge feature/analytics-python id: "merge: analytics-python → Python ✓"
+
+   checkout main
+   merge develop id: "release: v1.0.0" tag: "v1.0.0"
 ```
+
+| Rama | Propósito |
+|------|-----------|
+| `main` | Código estable — tag `v1.0.0` |
+| `develop` | Integración continua entre fases |
+| `feature/project-setup` | NestJS + TypeScript strict |
+| `feature/ingestion` | Bronze + `POST /v1/events` |
+| `feature/silver-layer` | Silver + validación + limpieza |
+| `feature/api-gold` | Gold + `GET /v1/metrics/category-sales` |
+| `feature/analytics-python` | `report.py` + Pandas + Matplotlib |
 
 ---
 
