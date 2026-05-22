@@ -393,28 +393,37 @@ gitGraph
 
 Se utilizó **Claude (Anthropic)** como asistente durante el desarrollo del proyecto.
 
+El proceso de colaboración con la IA quedó documentado en dos archivos del repositorio:
+
+- **[`CLAUDE.md`](./CLAUDE.md)** — instrucciones y contexto que se le dio a la IA al inicio de cada sesión: reglas de negocio por capa, estructura de carpetas, orden TDD, GitFlow y criterios de evaluación. Define el marco con el que la IA operó.
+- **[`skills/`](./skills/)** — documentación de los patrones arquitectónicos que emergieron durante el desarrollo conjunto, organizados por área técnica:
+  - [`skill_medallion_nestjs.md`](./skills/skill_medallion_nestjs.md) — Arquitectura Medallón, pipeline pull-based, jerarquía de tipos
+  - [`skill_typescript_strict.md`](./skills/skill_typescript_strict.md) — TypeScript strict, DTOs, Repository Pattern
+  - [`skill_tdd_jest.md`](./skills/skill_tdd_jest.md) — TDD con Jest, orden RED→GREEN, mocks con DI
+  - [`skill_python_analytics.md`](./skills/skill_python_analytics.md) — Pandas, 4 gráficas KPI, matplotlib headless
+
 ### En qué partes ayudó la IA
 
-| Área | Qué generó la IA | Cómo se usó |
-|------|-----------------|-------------|
-| **Arquitectura Medallón** | Estructura de módulos NestJS (Bronze / Silver / Gold), jerarquía de interfaces `SaleEvent → BronzeRecord → SilverRecord` | Revisada y ajustada para que reflejara las reglas de negocio reales del enunciado |
-| **Repository Pattern** | Interfaces `IBronzeRepository` / `ISilverRepository` e implementaciones InMemory | Adaptadas para garantizar idempotencia en Silver y append-only en Bronze |
-| **TDD** | Estructura de los archivos `.spec.ts` con datos hardcodeados y mocks Jest | Cada test fue ejecutado en RED primero (verificando que fallara) antes de escribir la implementación |
-| **Python analytics** | Funciones `load_gold_data`, `calculate_ticket_promedio`, `generate_charts` con matplotlib | Ejecutadas localmente y verificadas con datos reales del pipeline |
-| **Diagramas** | Scripts PlantUML y Python para los diagramas de arquitectura local y GCP | Revisados manualmente para que reflejaran la arquitectura implementada, no solo la teórica |
-| **README** | Estructura de secciones, ejemplos de curl, tablas de comparación GCP | Contrastado contra el enunciado para que cubriera todos los entregables requeridos |
+| Área | Qué generó la IA | Cómo se validó |
+|------|-----------------|----------------|
+| **Arquitectura Medallón** | Estructura de módulos NestJS (Bronze / Silver / Gold), jerarquía de interfaces `SaleEvent → BronzeRecord → SilverRecord` | Revisada contra las reglas de negocio del enunciado; ajustada idempotencia en Silver y append-only en Bronze |
+| **Repository Pattern** | Interfaces `IBronzeRepository` / `ISilverRepository` e implementaciones InMemory | Tests unitarios ejecutados en RED antes de cada implementación |
+| **TDD** | Estructura de archivos `.spec.ts` con datos hardcodeados y mocks Jest | Cada test corrió en RED primero — si pasaba antes de la implementación, el test era inválido |
+| **Python analytics** | Funciones `load_gold_data`, `calculate_ticket_promedio`, `generate_charts` con matplotlib | Ejecutadas con 120 eventos reales del pipeline; CSV y 4 PNGs verificados manualmente |
+| **Diagramas** | Scripts PlantUML y Python para diagramas de arquitectura local y GCP | Revisados para que reflejaran la arquitectura implementada, no solo la teórica |
+| **README y documentación** | Estructura de secciones, ejemplos de curl, tablas GCP | Contrastado línea por línea contra los entregables requeridos en el enunciado |
 
 ### Cómo se validó que el código fuera correcto y seguro
 
-1. **TDD como criterio de aceptación** — ningún bloque de implementación fue commiteado sin que sus tests pasaran en verde. El orden fue siempre: test RED → commit `test:` → implementación GREEN → commit `feat:`.
+1. **TDD como criterio de aceptación** — ningún bloque de implementación fue commiteado sin que sus tests pasaran en verde. Orden siempre: test RED → commit `test:` → implementación GREEN → commit `feat:`.
 
-2. **Prueba end-to-end manual** — el pipeline completo fue verificado con curl real:
-   - `POST /v1/events` → respuesta `201` con `layer: bronze`
-   - `GET /v1/metrics/category-sales` → datos agregados correctos por categoría y fecha
+2. **Prueba end-to-end manual** — pipeline completo verificado con datos reales:
+   - `POST /v1/events` × 120 eventos → respuesta `201 { layer: "bronze" }` en cada uno
+   - `GET /v1/metrics/category-sales` → agregación correcta por categoría y fecha
    - `python report.py` → CSV + 4 gráficas KPI generadas sin errores
 
-3. **Tipado estricto** — `strict: true` y `noImplicitAny: true` en TypeScript garantizan que no existan tipos implícitos ni `any` sin declarar. El compilador rechaza código ambiguo antes de que llegue a runtime.
+3. **Tipado estricto** — `strict: true` y `noImplicitAny: true` en TypeScript. El compilador rechaza tipos implícitos y `any` sin declarar antes de llegar a runtime.
 
-4. **Validación de entrada** — `ValidationPipe` global con `class-validator` en todos los DTOs: campos requeridos, tipos, rangos. Datos inválidos son rechazados en el borde de la API antes de entrar al pipeline.
+4. **Validación de entrada** — `ValidationPipe` global con `class-validator` en todos los DTOs. Datos inválidos son rechazados en el borde de la API antes de entrar al pipeline.
 
-5. **Separación de responsabilidades** — cada capa solo accede a sus propias interfaces. Silver no conoce detalles de Bronze más allá de `IBronzeRepository.findAll()`. Esto limita el impacto de errores a una sola capa.
+5. **Separación de responsabilidades** — cada capa solo accede a sus propias interfaces. Silver no conoce detalles de Bronze más allá de `IBronzeRepository.findAll()`. Errores quedan contenidos en una sola capa.
