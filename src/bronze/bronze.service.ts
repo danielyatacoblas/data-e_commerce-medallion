@@ -1,8 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
-import {
-  BRONZE_REPOSITORY,
-  IBronzeRepository,
-} from './repositories/bronze.repository.interface';
+import { BRONZE_REPOSITORY } from './repositories/bronze.repository.interface';
+import type { IBronzeRepository } from './repositories/bronze.repository.interface';
 import { SaleEvent } from '../common/interfaces/event.interface';
 
 export interface IngestResponse {
