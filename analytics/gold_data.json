@@ -3,30 +3,30 @@
     "category": "Electronics",
     "sale_date": "2026-05-21",
     "total_sales": 749.97,
-    "transaction_count": 3
-  },
-  {
-    "category": "Electronics",
-    "sale_date": "2026-05-22",
-    "total_sales": 299.99,
-    "transaction_count": 1
+    "transaction_count": 2
   },
   {
     "category": "Clothing",
     "sale_date": "2026-05-21",
     "total_sales": 149.97,
-    "transaction_count": 3
+    "transaction_count": 1
   },
   {
-    "category": "Home & Garden",
-    "sale_date": "2026-05-21",
-    "total_sales": 89.98,
-    "transaction_count": 2
+    "category": "Clothing",
+    "sale_date": "2026-05-22",
+    "total_sales": 89.99,
+    "transaction_count": 1
   },
   {
     "category": "Home & Garden",
     "sale_date": "2026-05-22",
-    "total_sales": 44.99,
+    "total_sales": 134.97,
+    "transaction_count": 1
+  },
+  {
+    "category": "Electronics",
+    "sale_date": "2026-05-22",
+    "total_sales": 399.99,
     "transaction_count": 1
   }
 ]
