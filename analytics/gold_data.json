@@ -1,32 +1,512 @@
 [
   {
     "category": "Electronics",
-    "sale_date": "2026-05-21",
-    "total_sales": 749.97,
-    "transaction_count": 2
-  },
-  {
-    "category": "Clothing",
-    "sale_date": "2026-05-21",
-    "total_sales": 149.97,
+    "sale_date": "2026-04-29",
+    "total_sales": 245,
     "transaction_count": 1
   },
   {
-    "category": "Clothing",
-    "sale_date": "2026-05-22",
-    "total_sales": 89.99,
+    "category": "Books",
+    "sale_date": "2026-04-23",
+    "total_sales": 199.35,
+    "transaction_count": 2
+  },
+  {
+    "category": "Books",
+    "sale_date": "2026-05-14",
+    "total_sales": 22.1,
+    "transaction_count": 1
+  },
+  {
+    "category": "Sports",
+    "sale_date": "2026-05-16",
+    "total_sales": 128.11,
     "transaction_count": 1
   },
   {
     "category": "Home & Garden",
-    "sale_date": "2026-05-22",
-    "total_sales": 134.97,
+    "sale_date": "2026-04-25",
+    "total_sales": 587.4,
+    "transaction_count": 2
+  },
+  {
+    "category": "Home & Garden",
+    "sale_date": "2026-05-15",
+    "total_sales": 193,
+    "transaction_count": 1
+  },
+  {
+    "category": "Books",
+    "sale_date": "2026-05-20",
+    "total_sales": 130.57,
+    "transaction_count": 2
+  },
+  {
+    "category": "Clothing",
+    "sale_date": "2026-05-19",
+    "total_sales": 120.49,
+    "transaction_count": 1
+  },
+  {
+    "category": "Sports",
+    "sale_date": "2026-04-27",
+    "total_sales": 369.94,
+    "transaction_count": 2
+  },
+  {
+    "category": "Electronics",
+    "sale_date": "2026-05-09",
+    "total_sales": 648.21,
+    "transaction_count": 1
+  },
+  {
+    "category": "Home & Garden",
+    "sale_date": "2026-05-14",
+    "total_sales": 1109.22,
+    "transaction_count": 2
+  },
+  {
+    "category": "Electronics",
+    "sale_date": "2026-05-17",
+    "total_sales": 543.68,
+    "transaction_count": 2
+  },
+  {
+    "category": "Books",
+    "sale_date": "2026-04-28",
+    "total_sales": 488.78,
+    "transaction_count": 4
+  },
+  {
+    "category": "Home & Garden",
+    "sale_date": "2026-05-09",
+    "total_sales": 203.07,
+    "transaction_count": 1
+  },
+  {
+    "category": "Sports",
+    "sale_date": "2026-05-08",
+    "total_sales": 639.12,
+    "transaction_count": 4
+  },
+  {
+    "category": "Electronics",
+    "sale_date": "2026-05-16",
+    "total_sales": 1733.08,
+    "transaction_count": 2
+  },
+  {
+    "category": "Clothing",
+    "sale_date": "2026-05-08",
+    "total_sales": 236.91,
+    "transaction_count": 1
+  },
+  {
+    "category": "Home & Garden",
+    "sale_date": "2026-05-11",
+    "total_sales": 771.72,
+    "transaction_count": 1
+  },
+  {
+    "category": "Books",
+    "sale_date": "2026-05-02",
+    "total_sales": 363.55,
+    "transaction_count": 2
+  },
+  {
+    "category": "Home & Garden",
+    "sale_date": "2026-05-20",
+    "total_sales": 1230.58,
+    "transaction_count": 3
+  },
+  {
+    "category": "Electronics",
+    "sale_date": "2026-04-26",
+    "total_sales": 980.18,
+    "transaction_count": 1
+  },
+  {
+    "category": "Home & Garden",
+    "sale_date": "2026-05-12",
+    "total_sales": 413.16,
     "transaction_count": 1
   },
   {
     "category": "Electronics",
-    "sale_date": "2026-05-22",
-    "total_sales": 399.99,
+    "sale_date": "2026-05-02",
+    "total_sales": 1711.15,
+    "transaction_count": 2
+  },
+  {
+    "category": "Clothing",
+    "sale_date": "2026-04-29",
+    "total_sales": 60.07,
+    "transaction_count": 2
+  },
+  {
+    "category": "Sports",
+    "sale_date": "2026-04-25",
+    "total_sales": 166.3,
+    "transaction_count": 1
+  },
+  {
+    "category": "Sports",
+    "sale_date": "2026-04-23",
+    "total_sales": 320.16,
+    "transaction_count": 1
+  },
+  {
+    "category": "Sports",
+    "sale_date": "2026-04-29",
+    "total_sales": 411.43,
+    "transaction_count": 3
+  },
+  {
+    "category": "Books",
+    "sale_date": "2026-05-21",
+    "total_sales": 43.43,
+    "transaction_count": 1
+  },
+  {
+    "category": "Sports",
+    "sale_date": "2026-05-20",
+    "total_sales": 654.13,
+    "transaction_count": 3
+  },
+  {
+    "category": "Home & Garden",
+    "sale_date": "2026-05-01",
+    "total_sales": 560.3,
+    "transaction_count": 1
+  },
+  {
+    "category": "Clothing",
+    "sale_date": "2026-05-10",
+    "total_sales": 58.56,
+    "transaction_count": 1
+  },
+  {
+    "category": "Electronics",
+    "sale_date": "2026-04-23",
+    "total_sales": 625.75,
+    "transaction_count": 1
+  },
+  {
+    "category": "Books",
+    "sale_date": "2026-05-04",
+    "total_sales": 173.74,
+    "transaction_count": 2
+  },
+  {
+    "category": "Books",
+    "sale_date": "2026-05-05",
+    "total_sales": 84.46,
+    "transaction_count": 2
+  },
+  {
+    "category": "Home & Garden",
+    "sale_date": "2026-05-02",
+    "total_sales": 568.88,
+    "transaction_count": 2
+  },
+  {
+    "category": "Home & Garden",
+    "sale_date": "2026-04-22",
+    "total_sales": 153.44,
+    "transaction_count": 1
+  },
+  {
+    "category": "Books",
+    "sale_date": "2026-04-26",
+    "total_sales": 55.56,
+    "transaction_count": 1
+  },
+  {
+    "category": "Books",
+    "sale_date": "2026-05-11",
+    "total_sales": 475.32,
+    "transaction_count": 3
+  },
+  {
+    "category": "Home & Garden",
+    "sale_date": "2026-05-16",
+    "total_sales": 83.78,
+    "transaction_count": 1
+  },
+  {
+    "category": "Sports",
+    "sale_date": "2026-05-09",
+    "total_sales": 243.06,
+    "transaction_count": 1
+  },
+  {
+    "category": "Electronics",
+    "sale_date": "2026-05-05",
+    "total_sales": 851.13,
+    "transaction_count": 1
+  },
+  {
+    "category": "Electronics",
+    "sale_date": "2026-05-13",
+    "total_sales": 1930.64,
+    "transaction_count": 2
+  },
+  {
+    "category": "Clothing",
+    "sale_date": "2026-05-20",
+    "total_sales": 332.97,
+    "transaction_count": 2
+  },
+  {
+    "category": "Sports",
+    "sale_date": "2026-05-17",
+    "total_sales": 747.57,
+    "transaction_count": 2
+  },
+  {
+    "category": "Electronics",
+    "sale_date": "2026-04-28",
+    "total_sales": 872.72,
+    "transaction_count": 1
+  },
+  {
+    "category": "Electronics",
+    "sale_date": "2026-05-08",
+    "total_sales": 737.9,
+    "transaction_count": 1
+  },
+  {
+    "category": "Sports",
+    "sale_date": "2026-05-21",
+    "total_sales": 111.72,
+    "transaction_count": 1
+  },
+  {
+    "category": "Home & Garden",
+    "sale_date": "2026-05-05",
+    "total_sales": 500.73,
+    "transaction_count": 1
+  },
+  {
+    "category": "Clothing",
+    "sale_date": "2026-05-13",
+    "total_sales": 483.65,
+    "transaction_count": 2
+  },
+  {
+    "category": "Books",
+    "sale_date": "2026-05-01",
+    "total_sales": 130.02,
+    "transaction_count": 1
+  },
+  {
+    "category": "Electronics",
+    "sale_date": "2026-04-24",
+    "total_sales": 710.8,
+    "transaction_count": 1
+  },
+  {
+    "category": "Sports",
+    "sale_date": "2026-04-28",
+    "total_sales": 966.63,
+    "transaction_count": 2
+  },
+  {
+    "category": "Clothing",
+    "sale_date": "2026-05-06",
+    "total_sales": 466.68,
+    "transaction_count": 1
+  },
+  {
+    "category": "Books",
+    "sale_date": "2026-04-30",
+    "total_sales": 58.74,
+    "transaction_count": 1
+  },
+  {
+    "category": "Home & Garden",
+    "sale_date": "2026-04-24",
+    "total_sales": 362.01,
+    "transaction_count": 1
+  },
+  {
+    "category": "Clothing",
+    "sale_date": "2026-05-05",
+    "total_sales": 111.82,
+    "transaction_count": 1
+  },
+  {
+    "category": "Electronics",
+    "sale_date": "2026-05-04",
+    "total_sales": 572.28,
+    "transaction_count": 1
+  },
+  {
+    "category": "Books",
+    "sale_date": "2026-05-03",
+    "total_sales": 25.21,
+    "transaction_count": 1
+  },
+  {
+    "category": "Books",
+    "sale_date": "2026-05-07",
+    "total_sales": 83.96,
+    "transaction_count": 1
+  },
+  {
+    "category": "Books",
+    "sale_date": "2026-05-10",
+    "total_sales": 274.17,
+    "transaction_count": 2
+  },
+  {
+    "category": "Sports",
+    "sale_date": "2026-04-30",
+    "total_sales": 672.85,
+    "transaction_count": 2
+  },
+  {
+    "category": "Electronics",
+    "sale_date": "2026-05-03",
+    "total_sales": 523.27,
+    "transaction_count": 1
+  },
+  {
+    "category": "Electronics",
+    "sale_date": "2026-05-18",
+    "total_sales": 954.64,
+    "transaction_count": 1
+  },
+  {
+    "category": "Books",
+    "sale_date": "2026-05-16",
+    "total_sales": 117.52,
+    "transaction_count": 2
+  },
+  {
+    "category": "Home & Garden",
+    "sale_date": "2026-05-17",
+    "total_sales": 778.71,
+    "transaction_count": 1
+  },
+  {
+    "category": "Books",
+    "sale_date": "2026-04-24",
+    "total_sales": 81.39,
+    "transaction_count": 1
+  },
+  {
+    "category": "Sports",
+    "sale_date": "2026-05-05",
+    "total_sales": 168.9,
+    "transaction_count": 1
+  },
+  {
+    "category": "Clothing",
+    "sale_date": "2026-05-11",
+    "total_sales": 229.8,
+    "transaction_count": 1
+  },
+  {
+    "category": "Sports",
+    "sale_date": "2026-05-10",
+    "total_sales": 135.34,
+    "transaction_count": 1
+  },
+  {
+    "category": "Sports",
+    "sale_date": "2026-05-07",
+    "total_sales": 173.91,
+    "transaction_count": 1
+  },
+  {
+    "category": "Electronics",
+    "sale_date": "2026-05-07",
+    "total_sales": 634.42,
+    "transaction_count": 1
+  },
+  {
+    "category": "Sports",
+    "sale_date": "2026-04-24",
+    "total_sales": 103.42,
+    "transaction_count": 1
+  },
+  {
+    "category": "Books",
+    "sale_date": "2026-05-08",
+    "total_sales": 123.75,
+    "transaction_count": 1
+  },
+  {
+    "category": "Clothing",
+    "sale_date": "2026-04-22",
+    "total_sales": 200.7,
+    "transaction_count": 1
+  },
+  {
+    "category": "Electronics",
+    "sale_date": "2026-05-12",
+    "total_sales": 598.01,
+    "transaction_count": 1
+  },
+  {
+    "category": "Electronics",
+    "sale_date": "2026-05-10",
+    "total_sales": 460.63,
+    "transaction_count": 1
+  },
+  {
+    "category": "Books",
+    "sale_date": "2026-04-29",
+    "total_sales": 47.96,
+    "transaction_count": 1
+  },
+  {
+    "category": "Electronics",
+    "sale_date": "2026-05-06",
+    "total_sales": 481.74,
+    "transaction_count": 1
+  },
+  {
+    "category": "Clothing",
+    "sale_date": "2026-05-14",
+    "total_sales": 172.32,
+    "transaction_count": 1
+  },
+  {
+    "category": "Clothing",
+    "sale_date": "2026-05-17",
+    "total_sales": 58.54,
+    "transaction_count": 1
+  },
+  {
+    "category": "Electronics",
+    "sale_date": "2026-05-14",
+    "total_sales": 1043.64,
+    "transaction_count": 1
+  },
+  {
+    "category": "Clothing",
+    "sale_date": "2026-05-21",
+    "total_sales": 324.64,
+    "transaction_count": 1
+  },
+  {
+    "category": "Sports",
+    "sale_date": "2026-05-03",
+    "total_sales": 389.14,
+    "transaction_count": 1
+  },
+  {
+    "category": "Clothing",
+    "sale_date": "2026-05-01",
+    "total_sales": 251.44,
+    "transaction_count": 1
+  },
+  {
+    "category": "Electronics",
+    "sale_date": "2026-04-25",
+    "total_sales": 766.12,
     "transaction_count": 1
   }
 ]
